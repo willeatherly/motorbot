@@ -7,6 +7,7 @@ import validators
 #import discord.py and supporting packages
 import discord
 from discord.ext import commands
+from ollama import chat, Client, ChatResponse
 
 #set up the class for bikes, probably
 db = Database()
@@ -15,6 +16,11 @@ class Bikes(db.Entity):
     discordid = PrimaryKey(str)
     bike = Required(str)
     secretfield = Optional(str)
+
+client = Client(
+    host='http://ollama-filler:11434',
+    headers={'x-client-type':'discord'}
+    )
 
 #setup the bot
 intents= discord.Intents.default()
@@ -282,6 +288,44 @@ async def cars(ctx:commands.Context, user: discord.User=None):
     await ctx.send(embed=embed)
 
 @bot.command()
+async def chat(ctx:commands.Context, *, request:str):
+    user = ctx.author
+    response = client.chat(model='mistral-small:22b', messages=[
+    {
+	    'role':'user',
+	    'content': user.display_name+' says: '+request,
+	    'max_tokens': 500
+	}
+	]
+	)
+	#print(response.message.content)
+    if len(response.message.content) > 2000:
+
+        await ctx.send(response.message.content[:2000])
+    else:
+        await ctx.send(response.message.content)
+
+    if len(response.message.content)<4000:
+
+        await ctx.send(response.message.content[2000:])
+
+    else: 
+        await ctx.send(response.message.content[2000:4000])
+    
+    if len(response.message.content)<6000:
+        await ctx.send(response.message.content[4000:])
+
+    else:
+        await ctx.send(response.message.content[4000:6000])
+
+    if len(response.message.content) < 8000:
+        await ctx.send(response.message.content[6000:])
+
+    else:
+        await ctx.send(response.message.content[6000:8000])
+
+
+@bot.command()
 async def usage(ctx:commands.Context):
     await ctx.send(f"The bot is pretty straightforward, but has some rules you need to follow.\n\nTo add your bike, use the `!setbikes` command, and for cars, use the `!setcars` command.\n\nTo view your cars or bikes, use the `!cars` or `!bikes` command. This also works if you tag a user.\nex: ```!cars @discorduser``` ```!bikes @discorduser```\n\nIf you want to add an image, create a newline at the end of the command and paste a link to the image. Some image providers don't work, so the best way to do this is paste an image in Discord, and use the link generated from the paste (right click and select \"copy link\")\n\nHere's an example with multiple vehicles and an image:\n```!setcars 2002 Honda Civic\n2005 Honda S2000\nhttps://example.com/abc.jpg``` ```!setbikes 2020 Kawasaki Ninja 650\n2005 Suzuki GSX-R 1000\nhttps://example.com/abc.gif``` \n**NOTE, IMAGE MUST BE A JPG OR GIF FILE**")
 
@@ -291,4 +335,4 @@ def main():
     bot.run('key')
 
 main()
- 
+    
